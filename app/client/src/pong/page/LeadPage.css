@@ -1,0 +1,15 @@
+.test {
+	background-color: rgb(0,0,0,0.2);
+}
+
+.homeButton:hover {
+	color: rgba(42, 70, 94, 0.87);
+	cursor: pointer;
+}
+
+.background-profile {
+  background-image: url("/public/background-pong.jpg");
+  background-size: cover;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}

@@ -1,0 +1,76 @@
+# ======== Development docker-compose.yaml =======
+
+version:  '3.8'
+services:
+
+# ====== client ======
+  frontend:
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    container_name: client
+    env_file:
+      - .env
+    build:
+      context: ./app/client/.
+      dockerfile: Dockerfile
+    image: react
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./app/client/save:/app/save
+    restart: always
+    networks:
+      - webapp
+
+# ====== server ======
+  backend:
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    env_file:
+      - .env
+    container_name: server
+    build:
+      context: ./app/server/.
+      dockerfile: Dockerfile
+    image: nestjs
+    expose:
+      - "3500"
+    volumes:
+      - ./app/server/prisma:/app/prisma
+      - ./app/server/save:/app/save
+    restart: always
+    networks:
+      - webapp
+      - database
+
+# ======== Database ======
+  postgres_db:
+    image: postgres
+    container_name: postgres_db
+    env_file:
+      - .env
+    networks:
+      - database
+    restart: always
+    expose:
+      - "5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "psql $POSTGRES_DB -U $POSTGRES_USER -c 'SELECT 1' || exit 1"]
+      interval: 0.5s
+      retries: 100
+
+# ====== networks ======
+networks:
+  webapp:
+    name: webapp
+  database:
+    name: database
+
+volumes:
+  db:
+    driver: local
+    name: postgres

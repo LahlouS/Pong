@@ -1,0 +1,99 @@
+# ======== Development docker-compose.yaml =======
+
+version:  '3.8'
+services:
+
+# ====== client ======
+  client:
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    container_name: client
+    env_file:
+      - .env
+    build:
+      context: ./app/client/.
+      dockerfile: Dockerfile.dev
+    image: react
+    expose:
+      - "5173"
+    volumes:
+      - ./app/client/src:/app/src
+      - ./app/client/public:/app/public
+      - ./app/client/vite.config.ts:/app/vite.config.ts
+    restart: always
+    networks:
+      - webapp
+
+# ====== server ======
+  server:
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    env_file:
+      - .env
+    container_name: server
+    build:
+      context: ./app/server/.
+      dockerfile: Dockerfile.dev
+    image: nestjs
+#    expose:
+#      - "3500"
+    ports:
+      - "3500:3500"
+      - "5555:5555"
+#    ports:
+#      - "5500:3500"
+    volumes:
+      - ./app/server/src:/app/src
+      - ./app/server/prisma:/app/prisma
+    restart: always
+    networks:
+      - webapp
+      - database
+
+# ======== Database ======
+  postgres_db:
+    image: postgres
+    container_name: postgres_db
+    env_file:
+      - .env
+    networks:
+      - database
+    restart: always
+    expose:
+      - "5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "psql $POSTGRES_DB -U $POSTGRES_USER -c 'SELECT 1' || exit 1"]
+      interval: 0.5s
+      retries: 100
+
+# ======== Nginx =========
+  nginx_proxy:
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    container_name: nginx_proxy
+    env_file:
+      - .env
+    build: ./app/nginx/.
+    image: nginx_proxy
+    ports:
+      - "8080:8080"
+    restart: always
+    networks:
+      - webapp
+
+# ====== networks ======
+networks:
+  webapp:
+    name: webapp
+  database:
+    name: database
+
+volumes:
+  db:
+    driver: local
+    name: postgres

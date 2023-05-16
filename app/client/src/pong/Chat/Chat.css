@@ -1,0 +1,13 @@
+.messageSent {
+	text-align: right;
+	background-color: aquamarine;
+}
+
+.messageReceived {
+	text-align: left;
+	background-color: lightgrey;
+}
+
+.roomListElem {
+
+}

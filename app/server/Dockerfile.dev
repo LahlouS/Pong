@@ -1,0 +1,17 @@
+# =========== Dockerfile for devlopment ===========
+
+FROM		node:19-alpine AS builder
+
+RUN			npm install -g npm@latest \
+			&& apk --no-cache add curl
+
+WORKDIR		/app
+
+COPY		. /app/
+
+RUN			npm --silent install
+
+EXPOSE		3500
+EXPOSE		5555
+
+ENTRYPOINT ["sh", "/app/entrypoint-server-dev.sh"]

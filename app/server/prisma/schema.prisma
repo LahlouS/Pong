@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["filteredRelationCount", "fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    Int              @id @default(autoincrement())
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  login                 String           @unique
+  password              String
+  avatar                String?
+  intraLogin            String?          @unique
+  refreshToken          String?
+  twoFA                 String?
+  isTwoFA               Boolean          @default(false)
+  status                String           @default("offline")
+  games                 User_Game[]
+  ownedRooms            Room[]           @relation("RoomOwner")
+  member                User_Room[]      @relation("RoomMember")
+  sendMessages          Message[]
+  directMessageSend     Direct_Message[] @relation("Sender")
+  directMessageReceived Direct_Message[] @relation("Recipient")
+  user1Friends          Friend[]         @relation("User1Friends")
+  user2Friends          Friend[]         @relation("User2Friends")
+  UserBlocker           Blocked[]        @relation("UserBlocker")
+  BlockedUser           Blocked[]        @relation("BlockedUser")
+  Ban                   Ban[]            @relation("BannedUser")
+  Mute                  Mute[]           @relation("MutedUser")
+  Admin                 Admin[]          @relation("AdminUser")
+}
+
+model Blocked {
+  id Int @id @default(autoincrement())
+
+  userId        Int
+  user          User     @relation("UserBlocker", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  blockedUserId Int
+  blockedUser   User     @relation("BlockedUser", fields: [blockedUserId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, blockedUserId])
+}
+
+model Friend {
+  id Int @id @default(autoincrement())
+
+  status    String   @default("pending")
+  user1Id   Int
+  user2Id   Int
+  user1     User     @relation("User1Friends", fields: [user1Id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user2     User     @relation("User2Friends", fields: [user2Id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([user1Id, user2Id])
+}
+
+model Room {
+  room_id   Int         @id @default(autoincrement())
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  isPublic  Boolean     @default(true)
+  password  String?
+  name      String
+  owner     User?       @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId   Int?
+  members   User_Room[]
+  messages  Message[]
+  bans      Ban[]
+  mutes     Mute[]
+  admins    Admin[]
+}
+
+model Admin {
+  Room        Room @relation(fields: [RoomId], references: [room_id], onDelete: Cascade, onUpdate: Cascade)
+  RoomId      Int
+  AdminUser   User @relation("AdminUser", fields: [AdminUserId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  AdminUserId Int
+
+  @@unique([AdminUserId, RoomId])
+}
+
+model Mute {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  Room        Room     @relation(fields: [RoomId], references: [room_id], onDelete: Cascade, onUpdate: Cascade)
+  RoomId      Int
+  MutedUser   User     @relation("MutedUser", fields: [MutedUserId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  MutedUserId Int
+  reason      String?
+
+  @@unique([MutedUserId, RoomId])
+}
+
+model Ban {
+  id           Int     @id @default(autoincrement())
+  Room         Room    @relation(fields: [RoomId], references: [room_id], onDelete: Cascade, onUpdate: Cascade)
+  RoomId       Int
+  bannedUser   User    @relation("BannedUser", fields: [bannedUserId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  bannedUserId Int
+  reason       String?
+
+  @@unique([bannedUserId, RoomId])
+}
+
+model User_Room {
+  member    User @relation("RoomMember", fields: [member_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  member_id Int
+  room      Room @relation(fields: [room_id], references: [room_id], onDelete: Cascade, onUpdate: Cascade)
+  room_id   Int
+
+  @@id([member_id, room_id])
+}
+
+model Games {
+  game_id   Int         @id @default(autoincrement())
+  createdAt DateTime    @default(now())
+  playedAt  DateTime    @updatedAt
+  status    String      @default("--")
+  players   User_Game[]
+}
+
+model User_Game {
+  player  User  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  user_id Int
+  game    Games @relation(fields: [game_id], references: [game_id], onDelete: Cascade, onUpdate: Cascade)
+  game_id Int
+  score   Int
+
+  @@id([user_id, game_id])
+}
+
+model Direct_Message {
+  id            Int @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+
+  sender       User   @relation("Sender", fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sender_id    Int
+  recipient    User   @relation("Recipient", fields: [recipient_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  recipient_id Int
+  content      String
+}
+
+model Message {
+  id Int @id @default(autoincrement())
+
+  createdAt DateTime @default(now())
+  sender    User     @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  sender_id Int
+  room      Room     @relation(fields: [room_id], references: [room_id], onDelete: Cascade, onUpdate: Cascade)
+  room_id   Int
+  content   String
+}
+
+model gamesInvites {
+  id          Int @id @default(autoincrement())
+
+  createdAt   DateTime @default(now())
+  sender_id   Int
+  sender_login String
+  receiver_id Int
+  receiver_login String
+  ballSpeed String
+  paddleSize String
+  duration String
+  funnyPong Boolean
+
+  @@unique([receiver_id, sender_id])
+}

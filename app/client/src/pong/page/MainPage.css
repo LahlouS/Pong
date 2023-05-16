@@ -1,0 +1,23 @@
+.loginButton {
+	transition-property: transform !important;
+	transition-duration: 500ms !important;
+}
+
+.loginButton:hover {
+	transform: scale(1.15);
+}
+
+.contactButton:hover {
+	text-decoration: underline !important;
+}
+
+.iconButton {
+
+}
+
+.background-main {
+  background-image: url("/public/background-pong.jpeg");
+  background-size: cover;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
